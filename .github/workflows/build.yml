@@ -6,6 +6,9 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -64,9 +67,9 @@ jobs:
 
       - name: Merge into single addon folder
         run: |
-          mkdir -p release/addons/pdfium-gde/bin
+          mkdir -p release/addons/pdfium-gde
           for dir in artifacts/pdfium-gde-*/; do
-            cp -rn "$dir"/* release/addons/pdfium-gde/
+            rsync -a "$dir"/ release/addons/pdfium-gde/
           done
 
       - name: Create release ZIP
