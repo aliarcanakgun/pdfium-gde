@@ -1,0 +1,2 @@
+# fix language detection for .h files
+*.h linguist-language=cpp
