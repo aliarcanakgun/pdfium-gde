@@ -1,0 +1,85 @@
+name: Build GDExtension
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+            arch: x86_64
+          - platform: linux
+            os: ubuntu-latest
+            arch: x86_64
+          - platform: macos
+            os: macos-latest
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install SCons
+        run: pip install scons
+
+      - name: Build (debug)
+        run: scons platform=${{ matrix.platform }} arch=${{ matrix.arch }} target=template_debug
+
+      - name: Build (release)
+        run: scons platform=${{ matrix.platform }} arch=${{ matrix.arch }} target=template_release
+
+      - name: Copy PDFium binary to bin
+        shell: bash
+        run: cp lib/${{ matrix.platform }}.${{ matrix.arch }}/* demo/addons/pdfium-gde/bin/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfium-gde-${{ matrix.platform }}-${{ matrix.arch }}
+          path: demo/addons/pdfium-gde/
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Merge into single addon folder
+        run: |
+          mkdir -p release/addons/pdfium-gde/bin
+          for dir in artifacts/pdfium-gde-*/; do
+            cp -rn "$dir"/* release/addons/pdfium-gde/
+          done
+
+      - name: Create release ZIP
+        run: cd release && zip -r ../pdfium-gde.zip addons/
+
+      - name: Upload release ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfium-gde-release
+          path: pdfium-gde.zip
+
+      - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: pdfium-gde.zip
