@@ -1,0 +1,14 @@
+# C++/SCons
+.sconsign.dblite
+.scons_cache/
+*.obj
+*.os
+*.o
+*.pyc
+
+# generated sources
+src/gen/
+
+# compiled binaries
+demo/addons/pdfium-gde/bin/*
+!demo/addons/pdfium-gde/bin/.gitkeep

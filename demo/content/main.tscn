@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://d300f4t5dv77q"]
+
+[ext_resource type="Script" uid="uid://bahtscvlrl43b" path="res://content/main.gd" id="1_yqvsc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yqvsc"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.23529412, 0.23529412, 0.23529412, 1)
+
+[node name="main" type="Control" unique_id=1688829371]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_yqvsc")
+
+[node name="vbc" type="VBoxContainer" parent="." unique_id=1891567942]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="toolbar" type="PanelContainer" parent="vbc" unique_id=2124691542]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yqvsc")
+
+[node name="hbc" type="HBoxContainer" parent="vbc/toolbar" unique_id=2029698432]
+layout_mode = 2
+alignment = 1
+
+[node name="page_num" type="LineEdit" parent="vbc/toolbar/hbc" unique_id=1359434447]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1"
+alignment = 2
+select_all_on_focus = true
+
+[node name="page_count" type="Label" parent="vbc/toolbar/hbc" unique_id=1706042056]
+unique_name_in_owner = true
+layout_mode = 2
+text = "/ 9"
+
+[node name="scroll" type="ScrollContainer" parent="vbc" unique_id=454666490]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="pages" type="VBoxContainer" parent="vbc/scroll" unique_id=1891663408]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[connection signal="text_submitted" from="vbc/toolbar/hbc/page_num" to="." method="_on_page_num_text_submitted"]

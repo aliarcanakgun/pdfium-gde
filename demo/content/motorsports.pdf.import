@@ -1,0 +1,14 @@
+[remap]
+
+importer="pdfium_gde.pdf"
+type="PDFDocument"
+uid="uid://w7gk5fnnfsla"
+path="res://.godot/imported/motorsports.pdf-db5b7d89fece367e0c680428537bfd36.res"
+
+[deps]
+
+source_file="res://content/motorsports.pdf"
+dest_files=["res://.godot/imported/motorsports.pdf-db5b7d89fece367e0c680428537bfd36.res"]
+
+[params]
+

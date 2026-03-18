@@ -1,0 +1,16 @@
+[configuration]
+entry_symbol = "pdfium_gde_library_init"
+compatibility_minimum = "4.5"
+reloadable = true
+
+[libraries]
+windows.debug.x86_64 = "./bin/pdfium-gde.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "./bin/pdfium-gde.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "./bin/libpdfium-gde.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "./bin/libpdfium-gde.linux.template_release.x86_64.so"
+macos.debug = "./bin/libpdfium-gde.macos.template_debug.arm64.dylib"
+macos.release = "./bin/libpdfium-gde.macos.template_release.arm64.dylib"
+
+[dependencies]
+windows.debug.x86_64 = {"./bin/pdfium.dll": ""}
+windows.release.x86_64 = {"./bin/pdfium.dll": ""}
