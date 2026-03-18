@@ -10,6 +10,13 @@ This is a Godot 4.5+ GDExtension that brings Google's **PDFium** library to Godo
 - **Lazy Loading**: Documents are opened only when accessed, saving memory.
 - **Editor Integration**: Full support for `load()` and `preload()` in GDScript via a custom import plugin.
 
+## Planned Features
+
+The current version focuses on PDF reading and rendering. Future updates aim to include:
+- **PDF Creation**: Generate new PDF documents from scratch.
+- **Editing**: Add, remove, or modify pages and content objects (text, images) in existing PDFs.
+- **PDF Saving**: Export modified documents.
+
 ## How to Build
 
 ### Prerequisites
