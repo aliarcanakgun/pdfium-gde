@@ -64,6 +64,12 @@ if err == OK:
     var metadata = doc.get_metadata("Title")
 ```
 
+## Contributing
+Contributions are welcome! If you find a bug or have a feature request, please open an issue or submit a pull request.
+
+## Support
+If you find this project useful, please give it a star! It helps more people discover this addon.
+
 ## License
 
 - This GDExtension is released under the **zlib License** (see `LICENSE` for details).
