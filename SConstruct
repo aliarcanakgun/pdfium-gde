@@ -39,7 +39,7 @@ if env["target"] in ["editor", "template_debug"]:
 
 # Creates a SCons target for the path with our sources.
 library = env.SharedLibrary(
-    f"demo/addons/{name}/bin/{lib_filename}",
+    f"demo/addons/{name}/{platform}/{lib_filename}",
     source=sources,
 )
 

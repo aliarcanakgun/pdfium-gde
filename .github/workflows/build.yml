@@ -46,9 +46,13 @@ jobs:
       - name: Build (release)
         run: scons platform=${{ matrix.platform }} arch=${{ matrix.arch }} target=template_release
 
-      - name: Copy PDFium binary to bin
+      - name: Copy PDFium binary and licenses
         shell: bash
-        run: cp lib/${{ matrix.platform }}.${{ matrix.arch }}/* demo/addons/pdfium-gde/bin/
+        run: |
+          mkdir -p demo/addons/pdfium-gde/${{ matrix.platform }}
+          cp lib/${{ matrix.platform }}.${{ matrix.arch }}/* demo/addons/pdfium-gde/${{ matrix.platform }}/
+          cp LICENSE demo/addons/pdfium-gde/LICENSE.txt
+          cp THIRDPARTY.md demo/addons/pdfium-gde/THIRDPARTY.md
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -71,6 +75,8 @@ jobs:
           for dir in artifacts/pdfium-gde-*/; do
             rsync -a "$dir"/ release/addons/pdfium-gde/
           done
+          find release/addons/pdfium-gde -name "*.exp" -type f -delete
+          find release/addons/pdfium-gde -name "*.lib" -type f -delete
 
       - name: Create release ZIP
         run: cd release && zip -r ../pdfium-gde.zip addons/

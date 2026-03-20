@@ -10,5 +10,10 @@
 src/gen/
 
 # compiled binaries
-demo/addons/pdfium-gde/bin/*
-!demo/addons/pdfium-gde/bin/.gitkeep
+demo/addons/pdfium-gde/linux/*
+demo/addons/pdfium-gde/macos/*
+demo/addons/pdfium-gde/windows/*
+
+!demo/addons/pdfium-gde/linux/.gitkeep
+!demo/addons/pdfium-gde/macos/.gitkeep
+!demo/addons/pdfium-gde/windows/.gitkeep

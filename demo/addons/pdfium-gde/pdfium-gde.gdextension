@@ -4,17 +4,17 @@ compatibility_minimum = "4.5"
 reloadable = true
 
 [libraries]
-windows.debug.x86_64 = "./bin/pdfium-gde.windows.template_debug.x86_64.dll"
-windows.release.x86_64 = "./bin/pdfium-gde.windows.template_release.x86_64.dll"
-linux.debug.x86_64 = "./bin/libpdfium-gde.linux.template_debug.x86_64.so"
-linux.release.x86_64 = "./bin/libpdfium-gde.linux.template_release.x86_64.so"
-macos.debug = "./bin/libpdfium-gde.macos.template_debug.arm64.dylib"
-macos.release = "./bin/libpdfium-gde.macos.template_release.arm64.dylib"
+windows.debug.x86_64 = "res://addons/pdfium-gde/windows/pdfium-gde.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/pdfium-gde/windows/pdfium-gde.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "res://addons/pdfium-gde/linux/libpdfium-gde.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://addons/pdfium-gde/linux/libpdfium-gde.linux.template_release.x86_64.so"
+macos.debug = "res://addons/pdfium-gde/macos/libpdfium-gde.macos.template_debug.arm64.dylib"
+macos.release = "res://addons/pdfium-gde/macos/libpdfium-gde.macos.template_release.arm64.dylib"
 
 [dependencies]
-windows.debug.x86_64 = {"./bin/pdfium.dll": ""}
-windows.release.x86_64 = {"./bin/pdfium.dll": ""}
-linux.debug.x86_64 = {"./bin/libpdfium.so": ""}
-linux.release.x86_64 = {"./bin/libpdfium.so": ""}
-macos.debug = {"./bin/libpdfium.dylib": ""}
-macos.release = {"./bin/libpdfium.dylib": ""}
+windows.debug.x86_64 = {"res://addons/pdfium-gde/windows/pdfium.dll": ""}
+windows.release.x86_64 = {"res://addons/pdfium-gde/windows/pdfium.dll": ""}
+linux.debug.x86_64 = {"res://addons/pdfium-gde/linux/libpdfium.so": ""}
+linux.release.x86_64 = {"res://addons/pdfium-gde/linux/libpdfium.so": ""}
+macos.debug = {"res://addons/pdfium-gde/macos/libpdfium.dylib": ""}
+macos.release = {"res://addons/pdfium-gde/macos/libpdfium.dylib": ""}
