@@ -1,10 +1,11 @@
 # THIS IS A VERY BASIC EXAMPLE OF 'PDFium-GDE' EXTENSION
-
 extends Control
+
+var doc: PDFDocument
 
 func _ready() -> void:
 	# "res://content/motorsports.pdf" file is downloaded from "https://www.scribd.com/document/984376224/Motorsports"
-	var doc: PDFDocument = preload("res://content/motorsports.pdf")
+	doc = preload("res://content/motorsports.pdf")
 	if !doc: return
 	
 	%page_count.text = "/ " + str(doc.get_page_count())

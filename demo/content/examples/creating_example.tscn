@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dl00rg83sjb47"]
+
+[ext_resource type="Script" uid="uid://2onc7qatp5a8" path="res://content/examples/creating_example.gd" id="1_es05f"]
+
+[node name="creator_example" type="Control" unique_id=1315523713]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_es05f")
+
+[node name="preview_page1" type="TextureRect" parent="." unique_id=1832709176]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5

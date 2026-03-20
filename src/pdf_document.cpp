@@ -6,6 +6,32 @@
 #include <godot_cpp/variant/packed_byte_array.hpp>
 
 #include "fpdf_doc.h"
+#include "fpdf_save.h"
+#include "fpdf_edit.h"
+#include <godot_cpp/classes/file_access.hpp>
+
+namespace {
+struct GodotFileWrite : public FPDF_FILEWRITE {
+	godot::Ref<godot::FileAccess> file;
+
+	GodotFileWrite() {
+		version = 1;
+		WriteBlock = &GodotFileWrite::write_block;
+	}
+
+	static int write_block(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size) {
+		GodotFileWrite* writer = static_cast<GodotFileWrite*>(pThis);
+		if (writer->file.is_valid()) {
+			godot::PackedByteArray data;
+			data.resize(size);
+			memcpy(data.ptrw(), pData, size);
+			writer->file->store_buffer(data);
+			return 1;
+		}
+		return 0;
+	}
+};
+} // namespace
 
 using namespace godot;
 
@@ -27,6 +53,12 @@ void PDFDocument::_release_pdfium() {
 }
 
 void PDFDocument::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("create_empty_doc"), &PDFDocument::create_empty_doc);
+	ClassDB::bind_method(D_METHOD("save_to_file", "path"), &PDFDocument::save_to_file);
+	ClassDB::bind_method(D_METHOD("create_page", "size"), &PDFDocument::create_page, DEFVAL(Vector2(1280, 720)));
+	ClassDB::bind_method(D_METHOD("create_page_from_image", "image"), &PDFDocument::create_page_from_image);
+	ClassDB::bind_method(D_METHOD("delete_page", "index"), &PDFDocument::delete_page);
+
 	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &PDFDocument::load_from_file);
 	ClassDB::bind_method(D_METHOD("get_page_count"), &PDFDocument::get_page_count);
 	ClassDB::bind_method(D_METHOD("get_metadata", "key"), &PDFDocument::get_metadata);
@@ -93,6 +125,82 @@ Error PDFDocument::load_from_file(const String &path) {
 	}
 
 	return OK;
+}
+
+void PDFDocument::create_empty_doc() {
+	if (doc) {
+		FPDF_CloseDocument(doc);
+		doc = nullptr;
+	}
+
+	if (!_pdfium_initialized) {
+		_ensure_pdfium_init();
+		_pdfium_initialized = true;
+	}
+
+	doc = FPDF_CreateNewDocument();
+	file_path = "";
+}
+
+Error PDFDocument::save_to_file(const String &path) {
+	_ensure_loaded();
+	ERR_FAIL_COND_V_MSG(!doc, Error::ERR_UNCONFIGURED, "PDFDocument: no document loaded.");
+
+	String abs_path = path;
+	if (abs_path.begins_with("res://") || abs_path.begins_with("user://")) {
+		abs_path = ProjectSettings::get_singleton()->globalize_path(abs_path);
+	}
+
+	Ref<FileAccess> file = FileAccess::open(abs_path, FileAccess::WRITE);
+	if (file.is_null()) {
+		ERR_PRINT("PDFDocument: could not open file for writing: " + abs_path);
+		return Error::ERR_FILE_CANT_WRITE;
+	}
+
+	GodotFileWrite writer;
+	writer.file = file;
+
+	if (FPDF_SaveAsCopy(doc, &writer, 0)) {
+		file->flush();
+		return OK;
+	} else {
+		ERR_PRINT("PDFDocument: FPDF_SaveAsCopy failed.");
+		return Error::FAILED;
+	}
+}
+
+Ref<PDFPage> PDFDocument::create_page(const Vector2 &size) {
+	_ensure_loaded();
+	ERR_FAIL_COND_V_MSG(!doc, Ref<PDFPage>(), "PDFDocument: no document loaded.");
+	
+	int index = FPDF_GetPageCount(doc);
+	FPDF_PAGE page = FPDFPage_New(doc, index, size.width, size.height);
+	ERR_FAIL_NULL_V_MSG(page, Ref<PDFPage>(), "PDFDocument: failed to create new page.");
+
+	Ref<PDFPage> pdf_page;
+	pdf_page.instantiate();
+	pdf_page->_init_page(page, index, Ref<Resource>(this));
+
+	return pdf_page;
+}
+
+Ref<PDFPage> PDFDocument::create_page_from_image(Ref<Image> image) {
+	ERR_FAIL_COND_V_MSG(image.is_null() || image->is_empty(), Ref<PDFPage>(), "PDFDocument: invalid image.");
+	Vector2 size(image->get_width(), image->get_height());
+	Ref<PDFPage> new_page = create_page(size);
+	if (new_page.is_valid()) {
+		new_page->add_image(image, Rect2(0, 0, size.x, size.y), true);
+	}
+	return new_page;
+}
+
+void PDFDocument::delete_page(int index) {
+	_ensure_loaded();
+	ERR_FAIL_COND_MSG(!doc, "PDFDocument: no document loaded.");
+	int count = FPDF_GetPageCount(doc);
+	ERR_FAIL_INDEX_MSG(index, count, "PDFDocument: page index out of range.");
+	
+	FPDFPage_Delete(doc, index);
 }
 
 void PDFDocument::set_file_path(const String &path) {

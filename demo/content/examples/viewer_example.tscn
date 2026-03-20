@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d300f4t5dv77q"]
 
-[ext_resource type="Script" uid="uid://bahtscvlrl43b" path="res://content/main.gd" id="1_yqvsc"]
+[ext_resource type="Script" uid="uid://bahtscvlrl43b" path="res://content/examples/viewer_example.gd" id="1_nrgkp"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yqvsc"]
 content_margin_left = 10.0
@@ -9,14 +9,14 @@ content_margin_right = 10.0
 content_margin_bottom = 10.0
 bg_color = Color(0.23529412, 0.23529412, 0.23529412, 1)
 
-[node name="main" type="Control" unique_id=1688829371]
+[node name="viewer_example" type="Control" unique_id=1688829371]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_yqvsc")
+script = ExtResource("1_nrgkp")
 
 [node name="vbc" type="VBoxContainer" parent="." unique_id=1891567942]
 layout_mode = 1

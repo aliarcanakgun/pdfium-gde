@@ -15,6 +15,7 @@ private:
 	FPDF_DOCUMENT doc = nullptr;
 	String file_path;
 	bool _pdfium_initialized = false;
+	Array _loaded_fonts;
 
 	void _ensure_loaded();
 
@@ -26,7 +27,15 @@ protected:
 	static void _bind_methods();
 
 public:
+	FPDF_DOCUMENT get_doc() const { return doc; }
+	void keep_font_data(const PackedByteArray &data) { _loaded_fonts.push_back(data); }
 	Error load_from_file(const String &path);
+	void create_empty_doc();
+	Error save_to_file(const String &path);
+	Ref<PDFPage> create_page(const Vector2 &size = Vector2(1280, 720));
+	Ref<PDFPage> create_page_from_image(Ref<Image> image);
+	void delete_page(int index);
+
 	int get_page_count() const;
 	String get_metadata(const String &key) const;
 	Ref<PDFPage> get_page(int index);

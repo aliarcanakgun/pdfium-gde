@@ -7,6 +7,10 @@
 #include <godot_cpp/variant/rect2.hpp>
 
 #include "fpdf_text.h"
+#include "fpdf_edit.h"
+#include "pdf_document.h"
+#include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 
 using namespace godot;
 
@@ -14,6 +18,15 @@ void PDFPage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("render_to_image", "dpi_scale"), &PDFPage::render_to_image, DEFVAL(1.0f));
 	ClassDB::bind_method(D_METHOD("get_text_data"), &PDFPage::get_text_data);
 	ClassDB::bind_method(D_METHOD("get_page_size"), &PDFPage::get_page_size);
+
+	ClassDB::bind_method(D_METHOD("add_image", "image", "rect", "keep_aspect"), &PDFPage::add_image, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("add_rect", "rect", "fill_color", "border_color", "border_thickness"), &PDFPage::add_rect, DEFVAL(Color(0,0,0,0)), DEFVAL(Color(0,0,0,1)), DEFVAL(1.0f));
+	ClassDB::bind_method(D_METHOD("add_path", "points", "fill_color", "border_color", "border_thickness", "closed"), &PDFPage::add_path, DEFVAL(Color(0,0,0,0)), DEFVAL(Color(0,0,0,1)), DEFVAL(1.0f), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("add_text", "text", "position", "font", "size", "color", "alignment", "is_bold", "is_italic"), &PDFPage::add_text, DEFVAL("Helvetica"), DEFVAL(12.0f), DEFVAL(Color(0,0,0,1)), DEFVAL(ALIGN_LEFT), DEFVAL(false), DEFVAL(false));
+
+	BIND_ENUM_CONSTANT(ALIGN_LEFT);
+	BIND_ENUM_CONSTANT(ALIGN_CENTER);
+	BIND_ENUM_CONSTANT(ALIGN_RIGHT);
 }
 
 PDFPage::~PDFPage() {
@@ -159,4 +172,159 @@ Array PDFPage::get_text_data() {
 	FPDFText_ClosePage(text_page);
 
 	return result;
+}
+
+void PDFPage::add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect) {
+	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
+	ERR_FAIL_COND_MSG(image.is_null() || image->is_empty(), "PDFPage: invalid image.");
+	
+	Ref<Image> local_img = image;
+	if (local_img->get_format() != Image::FORMAT_RGBA8) {
+		local_img->convert(Image::FORMAT_RGBA8);
+	}
+	int width = local_img->get_width();
+	int height = local_img->get_height();
+	PackedByteArray pixel_data = local_img->get_data();
+	const uint8_t *src = pixel_data.ptr();
+	
+	PackedByteArray bgra_data;
+	bgra_data.resize(width * height * 4);
+	uint8_t *dst = bgra_data.ptrw();
+	for (int i = 0; i < width * height; i++) {
+		int idx = i * 4;
+		dst[idx + 0] = src[idx + 2]; // B
+		dst[idx + 1] = src[idx + 1]; // G
+		dst[idx + 2] = src[idx + 0]; // R
+		dst[idx + 3] = src[idx + 3]; // A
+	}
+	
+	PDFDocument *doc_res = Object::cast_to<PDFDocument>(_owner_doc.ptr());
+	ERR_FAIL_NULL(doc_res);
+	FPDF_DOCUMENT doc = doc_res->get_doc();
+	
+	FPDF_PAGEOBJECT img_obj = FPDFPageObj_NewImageObj(doc);
+	FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(width, height, FPDFBitmap_BGRA, dst, width * 4);
+	FPDFImageObj_SetBitmap(&page, 1, img_obj, bitmap);
+	
+	float y_bottom = page_height - rect.position.y - rect.size.height;
+	FPDFPageObj_Transform(img_obj, rect.size.width, 0, 0, rect.size.height, rect.position.x, y_bottom);
+	
+	FPDFPage_InsertObject(page, img_obj);
+	FPDFPage_GenerateContent(page);
+	FPDFBitmap_Destroy(bitmap);
+}
+
+void PDFPage::add_rect(const Rect2 &rect, const Color &fill_color, const Color &border_color, float border_thickness) {
+	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
+	
+	float y_bottom = page_height - rect.position.y - rect.size.height;
+	FPDF_PAGEOBJECT rect_obj = FPDFPageObj_CreateNewRect(rect.position.x, y_bottom, rect.size.width, rect.size.height);
+	
+	bool do_fill = fill_color.a > 0.001f;
+	bool do_stroke = border_color.a > 0.001f;
+	
+	if (do_fill) {
+		FPDFPageObj_SetFillColor(rect_obj, (unsigned int)(fill_color.r * 255.0f), (unsigned int)(fill_color.g * 255.0f), (unsigned int)(fill_color.b * 255.0f), (unsigned int)(fill_color.a * 255.0f));
+	}
+	if (do_stroke) {
+		FPDFPageObj_SetStrokeColor(rect_obj, (unsigned int)(border_color.r * 255.0f), (unsigned int)(border_color.g * 255.0f), (unsigned int)(border_color.b * 255.0f), (unsigned int)(border_color.a * 255.0f));
+		FPDFPageObj_SetStrokeWidth(rect_obj, border_thickness);
+	}
+	
+	FPDFPath_SetDrawMode(rect_obj, do_fill ? 1 : 0, do_stroke ? 1 : 0);
+	
+	FPDFPage_InsertObject(page, rect_obj);
+	FPDFPage_GenerateContent(page);
+}
+
+void PDFPage::add_path(const PackedVector2Array &points, const Color &fill_color, const Color &border_color, float border_thickness, bool closed) {
+	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
+	if (points.size() < 2) return;
+	
+	FPDF_PAGEOBJECT path_obj = FPDFPageObj_CreateNewPath(points[0].x, page_height - points[0].y);
+	for (int i = 1; i < points.size(); i++) {
+		FPDFPath_LineTo(path_obj, points[i].x, page_height - points[i].y);
+	}
+	if (closed) {
+		FPDFPath_Close(path_obj);
+	}
+	
+	bool do_fill = fill_color.a > 0.001f;
+	bool do_stroke = border_color.a > 0.001f;
+	
+	if (do_fill) FPDFPageObj_SetFillColor(path_obj, (unsigned int)(fill_color.r * 255.0f), (unsigned int)(fill_color.g * 255.0f), (unsigned int)(fill_color.b * 255.0f), (unsigned int)(fill_color.a * 255.0f));
+	if (do_stroke) {
+		FPDFPageObj_SetStrokeColor(path_obj, (unsigned int)(border_color.r * 255.0f), (unsigned int)(border_color.g * 255.0f), (unsigned int)(border_color.b * 255.0f), (unsigned int)(border_color.a * 255.0f));
+		FPDFPageObj_SetStrokeWidth(path_obj, border_thickness);
+	}
+	
+	FPDFPath_SetDrawMode(path_obj, do_fill ? 1 : 0, do_stroke ? 1 : 0);
+	
+	FPDFPage_InsertObject(page, path_obj);
+	FPDFPage_GenerateContent(page);
+}
+
+void PDFPage::add_text(const String &text, const Vector2 &position, const String &font_name, float size, const Color &color, int alignment, bool is_bold, bool is_italic) {
+	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
+	
+	PDFDocument *doc_res = Object::cast_to<PDFDocument>(_owner_doc.ptr());
+	ERR_FAIL_NULL(doc_res);
+	FPDF_DOCUMENT doc = doc_res->get_doc();
+	
+	FPDF_FONT font = nullptr;
+	if (font_name.ends_with(".ttf") || font_name.ends_with(".otf")) {
+		String abs_path = ProjectSettings::get_singleton()->globalize_path(font_name);
+		Ref<FileAccess> fa = FileAccess::open(abs_path, FileAccess::READ);
+		if (fa.is_valid()) {
+			PackedByteArray font_data = fa->get_buffer(fa->get_length());
+			doc_res->keep_font_data(font_data);
+			font = FPDFText_LoadFont(doc, font_data.ptr(), font_data.size(), 1, 0);
+		}
+	} else {
+		String final_font = font_name;
+		if (is_bold && is_italic) final_font += "-BoldOblique";
+		else if (is_bold) final_font += "-Bold";
+		else if (is_italic) final_font += "-Oblique";
+		
+		font = FPDFText_LoadStandardFont(doc, final_font.utf8().get_data());
+	}
+	
+	if (!font) {
+		ERR_PRINT("PDFPage: Failed to load font: " + font_name);
+		return;
+	}
+	
+	FPDF_PAGEOBJECT text_obj = FPDFPageObj_CreateTextObj(doc, font, size);
+	
+	int len = text.length();
+	PackedByteArray utf16le_data;
+	utf16le_data.resize((len + 1) * 2);
+	char16_t* ptr = (char16_t*)utf16le_data.ptrw();
+	for (int i = 0; i < len; i++) {
+		ptr[i] = text[i];
+	}
+	ptr[len] = 0;
+	
+	FPDFText_SetText(text_obj, reinterpret_cast<FPDF_WIDESTRING>(utf16le_data.ptr()));
+	FPDFPageObj_SetFillColor(text_obj, (unsigned int)(color.r * 255.0f), (unsigned int)(color.g * 255.0f), (unsigned int)(color.b * 255.0f), (unsigned int)(color.a * 255.0f));
+	
+	float x = position.x;
+	float y = page_height - position.y;
+	
+	FPDFPageObj_Transform(text_obj, 1, 0, 0, 1, x, y);
+	
+	if (alignment != ALIGN_LEFT) {
+		float left, bottom, right, top;
+		if (FPDFPageObj_GetBounds(text_obj, &left, &bottom, &right, &top)) {
+			float width = right - left;
+			if (alignment == ALIGN_CENTER) {
+				FPDFPageObj_Transform(text_obj, 1, 0, 0, 1, -width / 2.0f, 0);
+			} else if (alignment == ALIGN_RIGHT) {
+				FPDFPageObj_Transform(text_obj, 1, 0, 0, 1, -width, 0);
+			}
+		}
+	}
+	
+	FPDFPage_InsertObject(page, text_obj);
+	FPDFPage_GenerateContent(page);
 }
