@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-This project ("PDFium-GDE") uses the following third-party libraries:
+This project uses the following third-party libraries:
 
 ## PDFium
 - **Source:** https://pdfium.googlesource.com/pdfium/
@@ -9,6 +9,7 @@ This project ("PDFium-GDE") uses the following third-party libraries:
 
 ### License Text:
 
+```text
 // Copyright 2014 The PDFium Authors
 //
 // Redistribution and use in source and binary forms, with or without
@@ -213,3 +214,4 @@ This project ("PDFium-GDE") uses the following third-party libraries:
       of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
+```
