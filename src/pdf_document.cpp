@@ -8,6 +8,7 @@
 #include "fpdf_doc.h"
 #include "fpdf_save.h"
 #include "fpdf_edit.h"
+#include "fpdf_ppo.h"
 #include <godot_cpp/classes/file_access.hpp>
 
 namespace {
@@ -58,6 +59,9 @@ void PDFDocument::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_page", "size"), &PDFDocument::create_page, DEFVAL(Vector2(1280, 720)));
 	ClassDB::bind_method(D_METHOD("create_page_from_image", "image"), &PDFDocument::create_page_from_image);
 	ClassDB::bind_method(D_METHOD("delete_page", "index"), &PDFDocument::delete_page);
+
+	ClassDB::bind_method(D_METHOD("extract_pages", "page_indices"), &PDFDocument::extract_pages, DEFVAL(PackedInt32Array()));
+	ClassDB::bind_method(D_METHOD("merge_with", "other_doc", "page_indices", "insert_at_index"), &PDFDocument::merge_with, DEFVAL(PackedInt32Array()), DEFVAL(-1));
 
 	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &PDFDocument::load_from_file);
 	ClassDB::bind_method(D_METHOD("get_page_count"), &PDFDocument::get_page_count);
@@ -201,6 +205,50 @@ void PDFDocument::delete_page(int index) {
 	ERR_FAIL_INDEX_MSG(index, count, "PDFDocument: page index out of range.");
 	
 	FPDFPage_Delete(doc, index);
+}
+
+Ref<PDFDocument> PDFDocument::extract_pages(const PackedInt32Array &page_indices) {
+	_ensure_loaded();
+	ERR_FAIL_COND_V_MSG(!doc, Ref<PDFDocument>(), "PDFDocument: no document loaded.");
+
+	Ref<PDFDocument> new_doc;
+	new_doc.instantiate();
+	new_doc->create_empty_doc();
+
+	const int* indices_ptr = page_indices.is_empty() ? nullptr : page_indices.ptr();
+	unsigned long length = page_indices.size();
+
+	FPDF_BOOL success = FPDF_ImportPagesByIndex(new_doc->get_doc(), doc, indices_ptr, length, 0);
+
+	if (!success) {
+		ERR_PRINT("PDFDocument: failed to extract pages. Invalid page indices.");
+		return Ref<PDFDocument>();
+	}
+
+	return new_doc;
+}
+
+Error PDFDocument::merge_with(Ref<PDFDocument> other_doc, const PackedInt32Array &page_indices, int insert_at_index) {
+	_ensure_loaded();
+	ERR_FAIL_COND_V_MSG(!doc, ERR_UNCONFIGURED, "PDFDocument: no document loaded.");
+	ERR_FAIL_COND_V_MSG(other_doc.is_null() || !other_doc->is_loaded(), ERR_INVALID_PARAMETER, "PDFDocument: other document is invalid or not loaded.");
+
+	int current_count = get_page_count();
+	if (insert_at_index < 0 || insert_at_index > current_count) {
+		insert_at_index = current_count; // Append by default
+	}
+
+	const int* indices_ptr = page_indices.is_empty() ? nullptr : page_indices.ptr();
+	unsigned long length = page_indices.size();
+
+	FPDF_BOOL success = FPDF_ImportPagesByIndex(doc, other_doc->get_doc(), indices_ptr, length, insert_at_index);
+
+	if (!success) {
+		ERR_PRINT("PDFDocument: failed to merge documents. Invalid page indices.");
+		return FAILED;
+	}
+
+	return OK;
 }
 
 void PDFDocument::set_file_path(const String &path) {

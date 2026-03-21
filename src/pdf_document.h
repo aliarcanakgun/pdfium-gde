@@ -2,6 +2,7 @@
 
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/packed_int32_array.hpp>
 
 #include "fpdfview.h"
 #include "pdf_page.h"
@@ -35,6 +36,9 @@ public:
 	Ref<PDFPage> create_page(const Vector2 &size = Vector2(1280, 720));
 	Ref<PDFPage> create_page_from_image(Ref<Image> image);
 	void delete_page(int index);
+
+	Ref<PDFDocument> extract_pages(const PackedInt32Array &page_indices = PackedInt32Array());
+	Error merge_with(Ref<PDFDocument> other_doc, const PackedInt32Array &page_indices = PackedInt32Array(), int insert_at_index = -1);
 
 	int get_page_count() const;
 	String get_metadata(const String &key) const;

@@ -10,7 +10,7 @@ This is a Godot 4.5+ GDExtension that brings Google's **PDFium** library to Godo
 - **Lazy Loading**: Documents are opened only when accessed, saving memory.
 - **Editor Integration**: Full support for `load()` and `preload()` in GDScript via a custom import plugin.
 - **PDF Generation & Export**: Create new PDF documents from scratch and save them to the filesystem (`res://`, `user://`, or absolute paths).
-- **Document Editing**: Add, remove, or modify pages. Insert images, text (with custom fonts and alignment), and drawn shapes (rectangles, paths) into existing or new PDFs.
+- **Document Editing**: Add, remove, extract, or merge pages. Insert images, text (with custom fonts and alignment), and drawn shapes (rectangles, paths) into existing or new PDFs.
 
 ## How to Build
 
@@ -116,6 +116,23 @@ page.add_text("Watermark", Vector2(50, 100), "res://fonts/MyFont.ttf", 16.0, Col
 
 # export the modified PDF
 doc.save_to_file("user://edited_output.pdf")
+```
+
+### Extracting and Merging Pages
+```gdscript
+var doc1 = PDFDocument.new()
+doc1.load_from_file("res://doc1.pdf")
+
+var doc2 = PDFDocument.new()
+doc2.load_from_file("res://doc2.pdf")
+
+# extract the 1st and 3rd pages from doc1 into a new document (pass empty array for all pages)
+var extracted = doc1.extract_pages(PackedInt32Array([0, 2]))
+extracted.save_to_file("user://extracted.pdf")
+
+# append only the 2nd and 5th pages of doc2 to the end of doc1 (pass empty array for all pages)
+doc1.merge_with(doc2, PackedInt32Array([1, 4]))
+doc1.save_to_file("user://merged.pdf")
 ```
 
 ## Contributing

@@ -1,3 +1,4 @@
+# THIS IS A VERY BASIC EXAMPLE OF 'PDFium-GDE' EXTENSION
 extends Control
 
 func _ready() -> void:
