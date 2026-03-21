@@ -10,7 +10,7 @@ This is a Godot 4.5+ GDExtension that brings Google's **PDFium** library to Godo
 - **Lazy Loading**: Documents are opened only when accessed, saving memory.
 - **Editor Integration**: Full support for `load()` and `preload()` in GDScript via a custom import plugin.
 - **PDF Generation & Export**: Create new PDF documents from scratch and save them to the filesystem (`res://`, `user://`, or absolute paths).
-- **Document Editing**: Add, remove, extract, or merge pages. Insert images, text (with custom fonts and alignment), and drawn shapes (rectangles, paths) into existing or new PDFs.
+- **Document Editing**: Add, remove, extract, or merge pages. Add document-wide watermarks; insert images, text (with custom fonts and alignment), and drawn shapes (rectangles, paths) into existing or new PDFs.
 
 ## How to Build
 
@@ -127,12 +127,28 @@ var doc2 = PDFDocument.new()
 doc2.load_from_file("res://doc2.pdf")
 
 # extract the 1st and 3rd pages from doc1 into a new document (pass empty array for all pages)
-var extracted = doc1.extract_pages(PackedInt32Array([0, 2]))
+var extracted = doc1.extract_pages([0, 2])
 extracted.save_to_file("user://extracted.pdf")
 
 # append only the 2nd and 5th pages of doc2 to the end of doc1 (pass empty array for all pages)
-doc1.merge_with(doc2, PackedInt32Array([1, 4]))
+doc1.merge_with(doc2, [1, 4])
 doc1.save_to_file("user://merged.pdf")
+```
+
+### Watermarking Pages
+```gdscript
+var doc = PDFDocument.new()
+doc.load_from_file("res://document.pdf")
+
+var logo = Image.load_from_file("res://watermark.png")
+
+# add a 50% transparent watermark exactly at the center of all pages
+doc.add_watermark_image(logo, Vector2(0.5, 0.5), Vector2(0, 0), 1.0, 0.5)
+
+# add a small logo at the bottom right of the 1st page, tucked 20px inwards (index 0)
+doc.add_watermark_image(logo, Vector2(1.0, 1.0), Vector2(-20, -20), 0.25, 0.8, [0])
+
+doc.save_to_file("user://watermarked_output.pdf")
 ```
 
 ## Contributing

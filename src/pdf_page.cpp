@@ -19,7 +19,7 @@ void PDFPage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_text_data"), &PDFPage::get_text_data);
 	ClassDB::bind_method(D_METHOD("get_page_size"), &PDFPage::get_page_size);
 
-	ClassDB::bind_method(D_METHOD("add_image", "image", "rect", "keep_aspect"), &PDFPage::add_image, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("add_image", "image", "rect", "keep_aspect", "opacity"), &PDFPage::add_image, DEFVAL(true), DEFVAL(1.0f));
 	ClassDB::bind_method(D_METHOD("add_rect", "rect", "fill_color", "border_color", "border_thickness"), &PDFPage::add_rect, DEFVAL(Color(0,0,0,0)), DEFVAL(Color(0,0,0,1)), DEFVAL(1.0f));
 	ClassDB::bind_method(D_METHOD("add_path", "points", "fill_color", "border_color", "border_thickness", "closed"), &PDFPage::add_path, DEFVAL(Color(0,0,0,0)), DEFVAL(Color(0,0,0,1)), DEFVAL(1.0f), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("add_text", "text", "position", "font", "size", "color", "alignment", "is_bold", "is_italic"), &PDFPage::add_text, DEFVAL("Helvetica"), DEFVAL(12.0f), DEFVAL(Color(0,0,0,1)), DEFVAL(ALIGN_LEFT), DEFVAL(false), DEFVAL(false));
@@ -174,7 +174,7 @@ Array PDFPage::get_text_data() {
 	return result;
 }
 
-void PDFPage::add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect) {
+void PDFPage::add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect, float opacity) {
 	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
 	ERR_FAIL_COND_MSG(image.is_null() || image->is_empty(), "PDFPage: invalid image.");
 	
@@ -195,7 +195,7 @@ void PDFPage::add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect) {
 		dst[idx + 0] = src[idx + 2]; // B
 		dst[idx + 1] = src[idx + 1]; // G
 		dst[idx + 2] = src[idx + 0]; // R
-		dst[idx + 3] = src[idx + 3]; // A
+		dst[idx + 3] = static_cast<uint8_t>(src[idx + 3] * opacity); // A
 	}
 	
 	PDFDocument *doc_res = Object::cast_to<PDFDocument>(_owner_doc.ptr());

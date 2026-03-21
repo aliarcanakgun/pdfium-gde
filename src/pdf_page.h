@@ -39,7 +39,7 @@ public:
 	Array get_text_data();
 	Vector2 get_page_size() const;
 
-	void add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect = true);
+	void add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect = true, float opacity = 1.0f);
 	void add_rect(const Rect2 &rect, const Color &fill_color = Color(0,0,0,0), const Color &border_color = Color(0,0,0,1), float border_thickness = 1.0f);
 	void add_path(const PackedVector2Array &points, const Color &fill_color = Color(0,0,0,0), const Color &border_color = Color(0,0,0,1), float border_thickness = 1.0f, bool closed = false);
 	void add_text(const String &text, const Vector2 &position, const String &font = "Helvetica", float size = 12.0f, const Color &color = Color(0,0,0,1), int alignment = ALIGN_LEFT, bool is_bold = false, bool is_italic = false);

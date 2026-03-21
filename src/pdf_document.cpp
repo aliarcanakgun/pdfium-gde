@@ -60,8 +60,9 @@ void PDFDocument::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_page_from_image", "image"), &PDFDocument::create_page_from_image);
 	ClassDB::bind_method(D_METHOD("delete_page", "index"), &PDFDocument::delete_page);
 
-	ClassDB::bind_method(D_METHOD("extract_pages", "page_indices"), &PDFDocument::extract_pages, DEFVAL(PackedInt32Array()));
-	ClassDB::bind_method(D_METHOD("merge_with", "other_doc", "page_indices", "insert_at_index"), &PDFDocument::merge_with, DEFVAL(PackedInt32Array()), DEFVAL(-1));
+	ClassDB::bind_method(D_METHOD("extract_pages", "page_indices"), &PDFDocument::extract_pages, DEFVAL(Array()));
+	ClassDB::bind_method(D_METHOD("merge_with", "other_doc", "page_indices", "insert_at_index"), &PDFDocument::merge_with, DEFVAL(Array()), DEFVAL(-1));
+	ClassDB::bind_method(D_METHOD("add_watermark_image", "image", "align_ratio", "offset", "scale", "opacity", "page_indices"), &PDFDocument::add_watermark_image, DEFVAL(Vector2(0, 0)), DEFVAL(1.0f), DEFVAL(1.0f), DEFVAL(Array()));
 
 	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &PDFDocument::load_from_file);
 	ClassDB::bind_method(D_METHOD("get_page_count"), &PDFDocument::get_page_count);
@@ -207,7 +208,7 @@ void PDFDocument::delete_page(int index) {
 	FPDFPage_Delete(doc, index);
 }
 
-Ref<PDFDocument> PDFDocument::extract_pages(const PackedInt32Array &page_indices) {
+Ref<PDFDocument> PDFDocument::extract_pages(const Array &page_indices) {
 	_ensure_loaded();
 	ERR_FAIL_COND_V_MSG(!doc, Ref<PDFDocument>(), "PDFDocument: no document loaded.");
 
@@ -215,8 +216,13 @@ Ref<PDFDocument> PDFDocument::extract_pages(const PackedInt32Array &page_indices
 	new_doc.instantiate();
 	new_doc->create_empty_doc();
 
-	const int* indices_ptr = page_indices.is_empty() ? nullptr : page_indices.ptr();
-	unsigned long length = page_indices.size();
+	PackedInt32Array packed_indices;
+	for (int i = 0; i < page_indices.size(); i++) {
+		packed_indices.push_back(page_indices[i]);
+	}
+
+	const int* indices_ptr = packed_indices.is_empty() ? nullptr : packed_indices.ptr();
+	unsigned long length = packed_indices.size();
 
 	FPDF_BOOL success = FPDF_ImportPagesByIndex(new_doc->get_doc(), doc, indices_ptr, length, 0);
 
@@ -228,7 +234,7 @@ Ref<PDFDocument> PDFDocument::extract_pages(const PackedInt32Array &page_indices
 	return new_doc;
 }
 
-Error PDFDocument::merge_with(Ref<PDFDocument> other_doc, const PackedInt32Array &page_indices, int insert_at_index) {
+Error PDFDocument::merge_with(Ref<PDFDocument> other_doc, const Array &page_indices, int insert_at_index) {
 	_ensure_loaded();
 	ERR_FAIL_COND_V_MSG(!doc, ERR_UNCONFIGURED, "PDFDocument: no document loaded.");
 	ERR_FAIL_COND_V_MSG(other_doc.is_null() || !other_doc->is_loaded(), ERR_INVALID_PARAMETER, "PDFDocument: other document is invalid or not loaded.");
@@ -238,8 +244,13 @@ Error PDFDocument::merge_with(Ref<PDFDocument> other_doc, const PackedInt32Array
 		insert_at_index = current_count; // Append by default
 	}
 
-	const int* indices_ptr = page_indices.is_empty() ? nullptr : page_indices.ptr();
-	unsigned long length = page_indices.size();
+	PackedInt32Array packed_indices;
+	for (int i = 0; i < page_indices.size(); i++) {
+		packed_indices.push_back(page_indices[i]);
+	}
+
+	const int* indices_ptr = packed_indices.is_empty() ? nullptr : packed_indices.ptr();
+	unsigned long length = packed_indices.size();
 
 	FPDF_BOOL success = FPDF_ImportPagesByIndex(doc, other_doc->get_doc(), indices_ptr, length, insert_at_index);
 
@@ -249,6 +260,43 @@ Error PDFDocument::merge_with(Ref<PDFDocument> other_doc, const PackedInt32Array
 	}
 
 	return OK;
+}
+
+void PDFDocument::add_watermark_image(Ref<Image> image, const Vector2 &align_ratio, const Vector2 &offset, float scale, float opacity, const Array &page_indices) {
+	_ensure_loaded();
+	ERR_FAIL_COND_MSG(!doc, "PDFDocument: no document loaded.");
+	ERR_FAIL_COND_MSG(image.is_null() || image->is_empty(), "PDFDocument: invalid image for watermark.");
+
+	int total_pages = get_page_count();
+	PackedInt32Array target_pages;
+	
+	if (page_indices.is_empty()) {
+		for (int i = 0; i < total_pages; i++) {
+			target_pages.push_back(i);
+		}
+	} else {
+		for (int i = 0; i < page_indices.size(); i++) {
+			target_pages.push_back(page_indices[i]);
+		}
+	}
+
+	float img_w = image->get_width() * scale;
+	float img_h = image->get_height() * scale;
+
+	for (int i = 0; i < target_pages.size(); i++) {
+		int index = target_pages[i];
+		if (index < 0 || index >= total_pages) continue;
+
+		Ref<PDFPage> page = get_page(index);
+		if (page.is_valid()) {
+			Vector2 page_size = page->get_page_size();
+			float pos_x = (page_size.x - img_w) * align_ratio.x + offset.x;
+			float pos_y = (page_size.y - img_h) * align_ratio.y + offset.y;
+			
+			Rect2 target_rect(pos_x, pos_y, img_w, img_h);
+			page->add_image(image, target_rect, true, opacity);
+		}
+	}
 }
 
 void PDFDocument::set_file_path(const String &path) {
