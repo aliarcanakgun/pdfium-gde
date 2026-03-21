@@ -12,7 +12,14 @@ This is a Godot 4.5+ GDExtension that brings Google's **PDFium** library to Godo
 - **PDF Generation & Export**: Create new PDF documents from scratch and save them to the filesystem (`res://`, `user://`, or absolute paths).
 - **Document Editing**: Add, remove, extract, or merge pages. Add document-wide watermarks; insert images, text (with custom fonts and alignment), and drawn shapes (rectangles, paths) into existing or new PDFs.
 
-## How to Build
+## Installation (Pre-built Release)
+
+1. Go to the [Releases](https://github.com/pdfium-gde/releases) page.
+2. Download the latest version.
+3. Extract the downloaded zip file into your project's root folder.
+4. Enable the plugin in **Project Settings -> Plugins**.
+
+## Building from Source
 
 ### Prerequisites
 - [Python 3.6+](https://www.python.org/)
@@ -26,17 +33,25 @@ This is a Godot 4.5+ GDExtension that brings Google's **PDFium** library to Godo
    ```
 2. Run SCons in the root directory:
    ```bash
-   # For Windows
+   # for Windows
    scons platform=windows target=template_debug
    scons platform=windows target=template_release
+   
+   # for Linux
+   scons platform=linux target=template_debug
+   scons platform=linux target=template_release
+   
+   # for macOS
+   scons platform=macos target=template_debug
+   scons platform=macos target=template_release
    ```
-   The compiled binaries will be placed in `demo/addons/pdfium-gde/bin/`.
+   The compiled binaries will be placed in OS-specific folders under `demo/addons/pdfium-gde/`.
 
-3. **Crucial Step**: You must copy the `pdfium.dll` (or `.so`/`.dylib`) from the `lib/` folder to the same directory as the compiled GDExtension (`demo/addons/pdfium-gde/bin/`).
+3. **Crucial Step**: You must copy the `pdfium.dll` (or `libpdfium.so`/`libpdfium.dylib`) from the corresponding platform folder in `lib/` (e.g., `lib/windows.x86_64/`) to the same OS-specific directory as the compiled GDExtension (e.g., `demo/addons/pdfium-gde/windows/`).
+
+4. **Finalize**: Copy the entire `demo/addons/pdfium-gde/` folder into your project's `addons` folder, and enable the plugin in **Project Settings -> Plugins**.
 
 ## Quick Start
-
-After enabling the plugin in **Project Settings -> Plugins**, you can use it like this:
 
 ### Loading via Import System
 Simply drop a `.pdf` into your project. It will be automatically recognized.
