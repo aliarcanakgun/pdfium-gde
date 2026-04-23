@@ -14,7 +14,7 @@ This is a Godot 4.5+ GDExtension that brings Google's **PDFium** library to Godo
 
 ## Installation (Pre-built Release)
 
-1. Go to the [Releases](https://github.com/pdfium-gde/releases) page.
+1. Go to the [Releases](https://github.com/aliarcanakgun/pdfium-gde/releases) page.
 2. Download the latest version.
 3. Extract the downloaded zip file into your project's root folder.
 4. Enable the plugin in **Project Settings -> Plugins**.
