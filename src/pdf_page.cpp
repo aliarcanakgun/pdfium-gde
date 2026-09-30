@@ -11,11 +11,16 @@
 #include "pdf_document.h"
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/worker_thread_pool.hpp>
 
 using namespace godot;
 
 void PDFPage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("render_to_image", "dpi_scale"), &PDFPage::render_to_image, DEFVAL(1.0f));
+	ClassDB::bind_method(D_METHOD("render_to_image_async", "dpi_scale"), &PDFPage::render_to_image_async, DEFVAL(1.0f));
+	
+	ADD_SIGNAL(MethodInfo("image_rendered", PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, "Image")));
+
 	ClassDB::bind_method(D_METHOD("get_text_data"), &PDFPage::get_text_data);
 	ClassDB::bind_method(D_METHOD("get_page_size"), &PDFPage::get_page_size);
 
@@ -30,6 +35,7 @@ void PDFPage::_bind_methods() {
 }
 
 PDFPage::~PDFPage() {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	if (page) {
 		FPDF_ClosePage(page);
 		page = nullptr;
@@ -49,7 +55,16 @@ Vector2 PDFPage::get_page_size() const {
 	return Vector2(page_width, page_height);
 }
 
+void PDFPage::render_to_image_async(float dpi_scale) {
+	WorkerThreadPool::get_singleton()->add_task(callable_mp(this, &PDFPage::_render_task).bind(dpi_scale), true, "PDF Render");
+}
+
+void PDFPage::_render_task(float dpi_scale) {
+	call_deferred("emit_signal", "image_rendered", render_to_image(dpi_scale));
+}
+
 Ref<Image> PDFPage::render_to_image(float dpi_scale) {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	ERR_FAIL_NULL_V_MSG(page, Ref<Image>(), "PDFPage: no page loaded.");
 	ERR_FAIL_COND_V_MSG(dpi_scale <= 0.0f, Ref<Image>(), "PDFPage: dpi_scale must be positive.");
 
@@ -96,6 +111,7 @@ Ref<Image> PDFPage::render_to_image(float dpi_scale) {
 }
 
 Array PDFPage::get_text_data() {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	Array result;
 	ERR_FAIL_NULL_V_MSG(page, result, "PDFPage: no page loaded.");
 
@@ -175,6 +191,7 @@ Array PDFPage::get_text_data() {
 }
 
 void PDFPage::add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect, float opacity) {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
 	ERR_FAIL_COND_MSG(image.is_null() || image->is_empty(), "PDFPage: invalid image.");
 	
@@ -215,6 +232,7 @@ void PDFPage::add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect, f
 }
 
 void PDFPage::add_rect(const Rect2 &rect, const Color &fill_color, const Color &border_color, float border_thickness) {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
 	
 	float y_bottom = page_height - rect.position.y - rect.size.height;
@@ -238,6 +256,7 @@ void PDFPage::add_rect(const Rect2 &rect, const Color &fill_color, const Color &
 }
 
 void PDFPage::add_path(const PackedVector2Array &points, const Color &fill_color, const Color &border_color, float border_thickness, bool closed) {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
 	if (points.size() < 2) return;
 	
@@ -265,6 +284,7 @@ void PDFPage::add_path(const PackedVector2Array &points, const Color &fill_color
 }
 
 void PDFPage::add_text(const String &text, const Vector2 &position, const String &font_name, float size, const Color &color, int alignment, bool is_bold, bool is_italic) {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
 	
 	PDFDocument *doc_res = Object::cast_to<PDFDocument>(_owner_doc.ptr());

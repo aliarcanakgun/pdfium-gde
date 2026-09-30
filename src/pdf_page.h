@@ -11,6 +11,7 @@
 #include <godot_cpp/variant/rect2.hpp>
 
 #include "fpdfview.h"
+#include <mutex>
 
 namespace godot {
 
@@ -30,12 +31,16 @@ private:
 	float page_width = 0.0f;
 	float page_height = 0.0f;
 	Ref<Resource> _owner_doc;
+	std::mutex _page_mutex;
+
+	void _render_task(float dpi_scale);
 
 protected:
 	static void _bind_methods();
 
 public:
 	Ref<Image> render_to_image(float dpi_scale = 1.0f);
+	void render_to_image_async(float dpi_scale = 1.0f);
 	Array get_text_data();
 	Vector2 get_page_size() const;
 
