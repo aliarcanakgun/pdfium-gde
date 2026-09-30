@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import shutil
 
 # You can find documentation for SCons and SConstruct files at:
 # https://scons.org/documentation.html
@@ -42,6 +43,17 @@ library = env.SharedLibrary(
     f"demo/addons/{name}/{platform}/{lib_filename}",
     source=sources,
 )
+
+# Copy the PDFium binaries to the addon folder.
+
+def copy_pdfium_binaries(target, source, env):
+    src_dir = env.Dir(f"lib/{platform}.{arch}").abspath
+    dst_dir = env.Dir(f"demo/addons/{name}/{platform}/{arch}").abspath
+    os.makedirs(dst_dir, exist_ok=True)
+    for filename in os.listdir(src_dir):
+        shutil.copy2(os.path.join(src_dir, filename), os.path.join(dst_dir, filename))
+
+env.AddPostAction(library, copy_pdfium_binaries)
 
 # Selects the shared library as the default target.
 Default(library)

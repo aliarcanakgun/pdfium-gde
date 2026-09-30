@@ -6,15 +6,27 @@ reloadable = true
 [libraries]
 windows.debug.x86_64 = "./windows/pdfium-gde.windows.template_debug.x86_64.dll"
 windows.release.x86_64 = "./windows/pdfium-gde.windows.template_release.x86_64.dll"
+windows.debug.arm64 = "./windows/pdfium-gde.windows.template_debug.arm64.dll"
+windows.release.arm64 = "./windows/pdfium-gde.windows.template_release.arm64.dll"
 linux.debug.x86_64 = "./linux/libpdfium-gde.linux.template_debug.x86_64.so"
 linux.release.x86_64 = "./linux/libpdfium-gde.linux.template_release.x86_64.so"
-macos.debug = "./macos/libpdfium-gde.macos.template_debug.arm64.dylib"
-macos.release = "./macos/libpdfium-gde.macos.template_release.arm64.dylib"
+linux.debug.arm64 = "./linux/libpdfium-gde.linux.template_debug.arm64.so"
+linux.release.arm64 = "./linux/libpdfium-gde.linux.template_release.arm64.so"
+macos.debug.arm64 = "./macos/libpdfium-gde.macos.template_debug.arm64.dylib"
+macos.release.arm64 = "./macos/libpdfium-gde.macos.template_release.arm64.dylib"
+macos.debug.x86_64 = "./macos/libpdfium-gde.macos.template_debug.x86_64.dylib"
+macos.release.x86_64 = "./macos/libpdfium-gde.macos.template_release.x86_64.dylib"
 
 [dependencies]
-windows.debug.x86_64 = {"./windows/pdfium.dll": ""}
-windows.release.x86_64 = {"./windows/pdfium.dll": ""}
-linux.debug.x86_64 = {"./linux/libpdfium.so": ""}
-linux.release.x86_64 = {"./linux/libpdfium.so": ""}
-macos.debug = {"./macos/libpdfium.dylib": ""}
-macos.release = {"./macos/libpdfium.dylib": ""}
+windows.debug.x86_64 = {"./windows/x86_64/pdfium.dll": ""}
+windows.release.x86_64 = {"./windows/x86_64/pdfium.dll": ""}
+windows.debug.arm64 = {"./windows/arm64/pdfium.dll": ""}
+windows.release.arm64 = {"./windows/arm64/pdfium.dll": ""}
+linux.debug.x86_64 = {"./linux/x86_64/libpdfium.so": ""}
+linux.release.x86_64 = {"./linux/x86_64/libpdfium.so": ""}
+linux.debug.arm64 = {"./linux/arm64/libpdfium.so": ""}
+linux.release.arm64 = {"./linux/arm64/libpdfium.so": ""}
+macos.debug.arm64 = {"./macos/arm64/libpdfium.dylib": ""}
+macos.release.arm64 = {"./macos/arm64/libpdfium.dylib": ""}
+macos.debug.x86_64 = {"./macos/x86_64/libpdfium.dylib": ""}
+macos.release.x86_64 = {"./macos/x86_64/libpdfium.dylib": ""}

@@ -18,12 +18,21 @@ jobs:
           - platform: windows
             os: windows-latest
             arch: x86_64
+          - platform: windows
+            os: windows-latest
+            arch: arm64
           - platform: linux
             os: ubuntu-latest
             arch: x86_64
+          - platform: linux
+            os: ubuntu-latest
+            arch: arm64
           - platform: macos
             os: macos-latest
             arch: arm64
+          - platform: macos
+            os: macos-latest
+            arch: x86_64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -49,8 +58,8 @@ jobs:
       - name: Copy PDFium binary and licenses
         shell: bash
         run: |
-          mkdir -p demo/addons/pdfium-gde/${{ matrix.platform }}
-          cp lib/${{ matrix.platform }}.${{ matrix.arch }}/* demo/addons/pdfium-gde/${{ matrix.platform }}/
+          mkdir -p demo/addons/pdfium-gde/${{ matrix.platform }}/${{ matrix.arch }}
+          cp lib/${{ matrix.platform }}.${{ matrix.arch }}/* demo/addons/pdfium-gde/${{ matrix.platform }}/${{ matrix.arch }}/
           cp LICENSE demo/addons/pdfium-gde/LICENSE.txt
           cp THIRDPARTY.md demo/addons/pdfium-gde/THIRDPARTY.md
 
