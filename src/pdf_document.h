@@ -36,6 +36,7 @@ public:
 	Error load_from_buffer(const PackedByteArray &buffer);
 	void create_empty_doc();
 	Error save_to_file(const String &path);
+	PackedByteArray save_to_buffer();
 	Ref<PDFPage> create_page(const Vector2 &size = Vector2(1280, 720));
 	Ref<PDFPage> create_page_from_image(Ref<Image> image);
 	void delete_page(int index);

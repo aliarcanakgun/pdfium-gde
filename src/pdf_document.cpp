@@ -32,6 +32,23 @@ struct GodotFileWrite : public FPDF_FILEWRITE {
 		return 0;
 	}
 };
+
+struct GodotBufferWrite : public FPDF_FILEWRITE {
+	godot::PackedByteArray buffer;
+
+	GodotBufferWrite() {
+		version = 1;
+		WriteBlock = &GodotBufferWrite::write_block;
+	}
+
+	static int write_block(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size) {
+		GodotBufferWrite* writer = static_cast<GodotBufferWrite*>(pThis);
+		int old_size = writer->buffer.size();
+		writer->buffer.resize(old_size + size);
+		memcpy(writer->buffer.ptrw() + old_size, pData, size);
+		return 1;
+	}
+};
 } // namespace
 
 using namespace godot;
@@ -56,6 +73,7 @@ void PDFDocument::_release_pdfium() {
 void PDFDocument::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_empty_doc"), &PDFDocument::create_empty_doc);
 	ClassDB::bind_method(D_METHOD("save_to_file", "path"), &PDFDocument::save_to_file);
+	ClassDB::bind_method(D_METHOD("save_to_buffer"), &PDFDocument::save_to_buffer);
 	ClassDB::bind_method(D_METHOD("create_page", "size"), &PDFDocument::create_page, DEFVAL(Vector2(1280, 720)));
 	ClassDB::bind_method(D_METHOD("create_page_from_image", "image"), &PDFDocument::create_page_from_image);
 	ClassDB::bind_method(D_METHOD("delete_page", "index"), &PDFDocument::delete_page);
@@ -181,6 +199,19 @@ Error PDFDocument::save_to_file(const String &path) {
 	} else {
 		ERR_PRINT("PDFDocument: FPDF_SaveAsCopy failed.");
 		return Error::FAILED;
+	}
+}
+
+PackedByteArray PDFDocument::save_to_buffer() {
+	_ensure_loaded();
+	ERR_FAIL_COND_V_MSG(!doc, PackedByteArray(), "PDFDocument: no document loaded.");
+
+	GodotBufferWrite writer;
+	if (FPDF_SaveAsCopy(doc, &writer, 0)) {
+		return writer.buffer;
+	} else {
+		ERR_PRINT("PDFDocument: FPDF_SaveAsCopy to buffer failed.");
+		return PackedByteArray();
 	}
 }
 
