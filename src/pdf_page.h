@@ -31,7 +31,7 @@ private:
 	float page_width = 0.0f;
 	float page_height = 0.0f;
 	Ref<Resource> _owner_doc;
-	std::mutex _page_mutex;
+	mutable std::mutex _page_mutex;
 
 	void _render_task(float dpi_scale);
 
@@ -43,6 +43,9 @@ public:
 	void render_to_image_async(float dpi_scale = 1.0f);
 	Array get_text_data();
 	Vector2 get_page_size() const;
+	
+	int get_rotation() const;
+	void set_rotation(int rotation);
 
 	void add_image(Ref<Image> image, const Rect2 &rect, bool keep_aspect = true, float opacity = 1.0f);
 	void add_rect(const Rect2 &rect, const Color &fill_color = Color(0,0,0,0), const Color &border_color = Color(0,0,0,1), float border_thickness = 1.0f);

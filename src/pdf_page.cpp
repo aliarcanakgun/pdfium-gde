@@ -23,6 +23,10 @@ void PDFPage::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_text_data"), &PDFPage::get_text_data);
 	ClassDB::bind_method(D_METHOD("get_page_size"), &PDFPage::get_page_size);
+	
+	ClassDB::bind_method(D_METHOD("get_rotation"), &PDFPage::get_rotation);
+	ClassDB::bind_method(D_METHOD("set_rotation", "rotation"), &PDFPage::set_rotation);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "rotation", PROPERTY_HINT_ENUM, "0 Degrees,90 Degrees,180 Degrees,270 Degrees"), "set_rotation", "get_rotation");
 
 	ClassDB::bind_method(D_METHOD("add_image", "image", "rect", "keep_aspect", "opacity"), &PDFPage::add_image, DEFVAL(true), DEFVAL(1.0f));
 	ClassDB::bind_method(D_METHOD("add_rect", "rect", "fill_color", "border_color", "border_thickness"), &PDFPage::add_rect, DEFVAL(Color(0,0,0,0)), DEFVAL(Color(0,0,0,1)), DEFVAL(1.0f));
@@ -52,7 +56,23 @@ void PDFPage::_init_page(FPDF_PAGE p_page, int p_index, Ref<Resource> p_owner) {
 }
 
 Vector2 PDFPage::get_page_size() const {
+	std::lock_guard<std::mutex> lock(_page_mutex);
 	return Vector2(page_width, page_height);
+}
+
+int PDFPage::get_rotation() const {
+	std::lock_guard<std::mutex> lock(_page_mutex);
+	if (!page) return 0;
+	return FPDFPage_GetRotation(page);
+}
+
+void PDFPage::set_rotation(int rotation) {
+	std::lock_guard<std::mutex> lock(_page_mutex);
+	ERR_FAIL_NULL_MSG(page, "PDFPage: no page loaded.");
+	FPDFPage_SetRotation(page, rotation);
+	
+	page_width = FPDF_GetPageWidthF(page);
+	page_height = FPDF_GetPageHeightF(page);
 }
 
 void PDFPage::render_to_image_async(float dpi_scale) {
