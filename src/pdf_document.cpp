@@ -65,6 +65,7 @@ void PDFDocument::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_watermark_image", "image", "align_ratio", "offset", "scale", "opacity", "page_indices"), &PDFDocument::add_watermark_image, DEFVAL(Vector2(0, 0)), DEFVAL(1.0f), DEFVAL(1.0f), DEFVAL(Array()));
 
 	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &PDFDocument::load_from_file);
+	ClassDB::bind_method(D_METHOD("load_from_buffer", "buffer"), &PDFDocument::load_from_buffer);
 	ClassDB::bind_method(D_METHOD("get_page_count"), &PDFDocument::get_page_count);
 	ClassDB::bind_method(D_METHOD("get_metadata", "key"), &PDFDocument::get_metadata);
 	ClassDB::bind_method(D_METHOD("get_page", "index"), &PDFDocument::get_page);
@@ -86,7 +87,18 @@ PDFDocument::~PDFDocument() {
 }
 
 Error PDFDocument::load_from_file(const String &path) {
-	// close any previously loaded document
+	PackedByteArray buffer = FileAccess::get_file_as_bytes(path);
+	if (buffer.is_empty()) {
+		ERR_PRINT("PDFDocument: file not found or could not be read: " + path);
+		return ERR_FILE_NOT_FOUND;
+	}
+
+	Error err = load_from_buffer(buffer);
+	if (err == OK) file_path = path;
+	return err;
+}
+
+Error PDFDocument::load_from_buffer(const PackedByteArray &buffer) {
 	if (doc) {
 		FPDF_CloseDocument(doc);
 		doc = nullptr;
@@ -97,34 +109,31 @@ Error PDFDocument::load_from_file(const String &path) {
 		_pdfium_initialized = true;
 	}
 
-	file_path = path;
+	file_path = "";
+	_file_buffer = buffer;
 
-	// pdfium needs an absolute OS path, not a godot virtual path
-	String abs_path = path;
-	if (abs_path.begins_with("res://") || abs_path.begins_with("user://")) {
-		abs_path = ProjectSettings::get_singleton()->globalize_path(abs_path);
+	if (_file_buffer.is_empty()) {
+		ERR_PRINT("PDFDocument: empty buffer provided.");
+		return ERR_INVALID_DATA;
 	}
 
-	CharString utf8_path = abs_path.utf8();
-	doc = FPDF_LoadDocument(utf8_path.get_data(), nullptr);
+	doc = FPDF_LoadMemDocument(_file_buffer.ptr(), _file_buffer.size(), nullptr);
 
 	if (!doc) {
 		unsigned long err = FPDF_GetLastError();
+		_file_buffer.clear();
 		switch (err) {
-			case FPDF_ERR_FILE:
-				ERR_PRINT("PDFDocument: file not found or could not be opened: " + path);
-				return ERR_FILE_NOT_FOUND;
 			case FPDF_ERR_FORMAT:
-				ERR_PRINT("PDFDocument: file is not a valid PDF: " + path);
+				ERR_PRINT("PDFDocument: data is not a valid PDF.");
 				return ERR_FILE_CORRUPT;
 			case FPDF_ERR_PASSWORD:
-				ERR_PRINT("PDFDocument: PDF requires a password: " + path);
+				ERR_PRINT("PDFDocument: PDF requires a password.");
 				return ERR_FILE_CANT_OPEN;
 			case FPDF_ERR_SECURITY:
-				ERR_PRINT("PDFDocument: unsupported security scheme: " + path);
+				ERR_PRINT("PDFDocument: unsupported security scheme.");
 				return ERR_FILE_CANT_OPEN;
 			default:
-				ERR_PRINT("PDFDocument: unknown error loading PDF: " + path);
+				ERR_PRINT("PDFDocument: unknown error loading PDF data.");
 				return ERR_FILE_CANT_OPEN;
 		}
 	}
@@ -145,6 +154,7 @@ void PDFDocument::create_empty_doc() {
 
 	doc = FPDF_CreateNewDocument();
 	file_path = "";
+	_file_buffer.clear();
 }
 
 Error PDFDocument::save_to_file(const String &path) {

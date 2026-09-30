@@ -18,6 +18,7 @@ private:
 	String file_path;
 	bool _pdfium_initialized = false;
 	Array _loaded_fonts;
+	PackedByteArray _file_buffer;
 
 	void _ensure_loaded();
 
@@ -32,6 +33,7 @@ public:
 	FPDF_DOCUMENT get_doc() const { return doc; }
 	void keep_font_data(const PackedByteArray &data) { _loaded_fonts.push_back(data); }
 	Error load_from_file(const String &path);
+	Error load_from_buffer(const PackedByteArray &buffer);
 	void create_empty_doc();
 	Error save_to_file(const String &path);
 	Ref<PDFPage> create_page(const Vector2 &size = Vector2(1280, 720));
