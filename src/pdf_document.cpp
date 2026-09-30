@@ -82,8 +82,8 @@ void PDFDocument::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("merge_with", "other_doc", "page_indices", "insert_at_index"), &PDFDocument::merge_with, DEFVAL(Array()), DEFVAL(-1));
 	ClassDB::bind_method(D_METHOD("add_watermark_image", "image", "align_ratio", "offset", "scale", "opacity", "page_indices"), &PDFDocument::add_watermark_image, DEFVAL(Vector2(0, 0)), DEFVAL(1.0f), DEFVAL(1.0f), DEFVAL(Array()));
 
-	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &PDFDocument::load_from_file);
-	ClassDB::bind_method(D_METHOD("load_from_buffer", "buffer"), &PDFDocument::load_from_buffer);
+	ClassDB::bind_method(D_METHOD("load_from_file", "path", "password"), &PDFDocument::load_from_file, DEFVAL(""));
+	ClassDB::bind_method(D_METHOD("load_from_buffer", "buffer", "password"), &PDFDocument::load_from_buffer, DEFVAL(""));
 	ClassDB::bind_method(D_METHOD("get_page_count"), &PDFDocument::get_page_count);
 	ClassDB::bind_method(D_METHOD("get_metadata", "key"), &PDFDocument::get_metadata);
 	ClassDB::bind_method(D_METHOD("get_page", "index"), &PDFDocument::get_page);
@@ -104,19 +104,19 @@ PDFDocument::~PDFDocument() {
 	}
 }
 
-Error PDFDocument::load_from_file(const String &path) {
+Error PDFDocument::load_from_file(const String &path, const String &password) {
 	PackedByteArray buffer = FileAccess::get_file_as_bytes(path);
 	if (buffer.is_empty()) {
 		ERR_PRINT("PDFDocument: file not found or could not be read: " + path);
 		return ERR_FILE_NOT_FOUND;
 	}
 
-	Error err = load_from_buffer(buffer);
+	Error err = load_from_buffer(buffer, password);
 	if (err == OK) file_path = path;
 	return err;
 }
 
-Error PDFDocument::load_from_buffer(const PackedByteArray &buffer) {
+Error PDFDocument::load_from_buffer(const PackedByteArray &buffer, const String &password) {
 	if (doc) {
 		FPDF_CloseDocument(doc);
 		doc = nullptr;
@@ -128,6 +128,7 @@ Error PDFDocument::load_from_buffer(const PackedByteArray &buffer) {
 	}
 
 	file_path = "";
+	_password = password;
 	_file_buffer = buffer;
 
 	if (_file_buffer.is_empty()) {
@@ -135,7 +136,8 @@ Error PDFDocument::load_from_buffer(const PackedByteArray &buffer) {
 		return ERR_INVALID_DATA;
 	}
 
-	doc = FPDF_LoadMemDocument(_file_buffer.ptr(), _file_buffer.size(), nullptr);
+	const char *pwd = _password.is_empty() ? nullptr : _password.utf8().get_data();
+	doc = FPDF_LoadMemDocument(_file_buffer.ptr(), _file_buffer.size(), pwd);
 
 	if (!doc) {
 		unsigned long err = FPDF_GetLastError();
@@ -362,7 +364,7 @@ void PDFDocument::_ensure_loaded() {
 		return;
 	}
 
-	load_from_file(path_to_load);
+	load_from_file(path_to_load, _password);
 }
 
 int PDFDocument::get_page_count() const {

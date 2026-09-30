@@ -16,6 +16,7 @@ class PDFDocument : public Resource {
 private:
 	FPDF_DOCUMENT doc = nullptr;
 	String file_path;
+	String _password;
 	bool _pdfium_initialized = false;
 	Array _loaded_fonts;
 	PackedByteArray _file_buffer;
@@ -32,8 +33,8 @@ protected:
 public:
 	FPDF_DOCUMENT get_doc() const { return doc; }
 	void keep_font_data(const PackedByteArray &data) { _loaded_fonts.push_back(data); }
-	Error load_from_file(const String &path);
-	Error load_from_buffer(const PackedByteArray &buffer);
+	Error load_from_file(const String &path, const String &password = "");
+	Error load_from_buffer(const PackedByteArray &buffer, const String &password = "");
 	void create_empty_doc();
 	Error save_to_file(const String &path);
 	PackedByteArray save_to_buffer();
